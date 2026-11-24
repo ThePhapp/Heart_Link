@@ -1,10 +1,31 @@
--- ===== Heartlink - Demo seed data =====
--- Chạy sau khi app đã khởi động (Hibernate tạo bảng):
---   make seed
--- hoặc:
---   docker compose exec -T postgres psql -U postgres -d heartlink < seed/seed.sql
+-- ===== Heartlink - Demo seed data (DEV / DEMO ONLY) =====
+-- Cảnh báo: Script này thực hiện TRUNCATE TABLE users RESTART IDENTITY CASCADE.
+-- Bị chặn mặc định và bị cấm tuyệt đối trên môi trường release / prod / staging.
+--
+-- Chỉ chạy trên môi trường dev/demo cục bộ sau khi schema đã migrate:
+--   docker compose exec -T -e PGOPTIONS="-c heartlink.allow_demo_seed=true" postgres \
+--     psql -v ON_ERROR_STOP=1 -U postgres -d heartlink < seed/seed.sql
 
--- Reset dữ liệu (CASCADE xóa luôn swipes + matches + refresh_tokens + notifications)
+BEGIN;
+
+DO $$
+DECLARE
+    v_env   text := lower(coalesce(current_setting('heartlink.env', true), ''));
+    v_allow text := lower(coalesce(current_setting('heartlink.allow_demo_seed', true), ''));
+BEGIN
+    IF v_env IN ('release', 'prod', 'production', 'staging') THEN
+        RAISE EXCEPTION
+            '[SEED-GUARD] Destructive demo seed (TRUNCATE CASCADE) is forbidden when heartlink.env=%',
+            v_env;
+    END IF;
+
+    IF v_allow IS DISTINCT FROM 'true' THEN
+        RAISE EXCEPTION
+            '[SEED-GUARD] Destructive demo seed (TRUNCATE CASCADE) is blocked by default. Set heartlink.allow_demo_seed=true explicitly in local dev/demo only.';
+    END IF;
+END $$;
+
+-- Reset dữ liệu (CASCADE xóa luôn swipes + matches + messages + refresh_tokens + notifications)
 TRUNCATE TABLE users RESTART IDENTITY CASCADE;
 
 -- ===== Users =====
@@ -66,3 +87,5 @@ INSERT INTO notifications (user_id, match_id, type, created_at)
 SELECT user_a_id, id, 'MATCH_CREATED', created_at FROM matches
 UNION ALL
 SELECT user_b_id, id, 'MATCH_CREATED', created_at FROM matches;
+
+COMMIT;
