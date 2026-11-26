@@ -1,6 +1,6 @@
 # Heartlink benchmark baseline
 
-This directory contains the reproducible workload used by Phase 2 task T01.
+This directory contains the reproducible workload used by Phase 2 tasks T01 and T02.
 The benchmark is intended to compare Phase 1 and Phase 2 on the same source
 revision, runtime settings, dataset shape, random trace, and response classes.
 
@@ -18,6 +18,34 @@ The notebook must use a pinned commit when `REF` is provided. A moving branch
 may be used only for an exploratory run and must be labelled as such in the
 results. Quick mode is a pipeline smoke test; its numbers must not be used as
 performance evidence.
+
+## T02 baseline evidence contract
+
+The reportable baseline must run the pinned notebook with `HL_QUICK` unset. The
+focused evidence set is:
+
+- S1 recommendation latency against swipe-history size, including `EXPLAIN
+  (ANALYZE, BUFFERS)` output;
+- S4 uniform versus Zipf hot-profile contention;
+- S7e polling load, plus the existing S3 correctness smoke checks.
+
+Every request record must retain its HTTP status and one response class:
+`created_201`, `conflict_409`, `rate_limited_429`, `unavailable_503`,
+`other_2xx`, `other_4xx`, `other_5xx`, `timeout_or_exception`, or `other`.
+The result directory must contain raw request files, `summary.csv`,
+`status_counts.csv`, `explain_recommendations.json`, `env.json`,
+`evidence_manifest.json`, and `baseline_report.md`.
+
+The notebook validates that each summary row is backed by the matching raw
+request rows. Set `HL_REPLAY_CASE` to a scenario name (for example
+`S4_zipf`) to rerun one deterministic case and write a separate replay raw
+file. A replay is evidence only when it uses the same pinned revision,
+configuration, seed, and dataset reset contract.
+
+The report must state whether it is a Kaggle or local run and must not compare
+local CPU/RAM numbers as if they were Kaggle measurements. Missing application
+metrics are labelled as external process measurements rather than inferred
+from latency alone.
 
 ## Dataset isolation
 
