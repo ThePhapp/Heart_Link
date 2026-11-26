@@ -73,5 +73,9 @@ HL_QUICK=1 jupyter nbconvert --to notebook --execute benchmark/heartlink_kaggle_
   --output /tmp/heartlink-benchmark-smoke.ipynb
 ```
 
-For a reportable run, leave `HL_QUICK` unset, set `REF` to the commit being
+For a reportable run, leave `HL_QUICK` unset, set `HL_REF` to the commit being
 measured, and preserve the generated results directory and `env.json`.
+
+To verify one deterministic replay after the full run, set for example
+`HL_REF=<commit> HL_REPLAY_CASE=S4_zipf` and preserve the generated
+`raw_S4_zipf_*_replay.csv.gz` plus `replay_summary.csv`.
