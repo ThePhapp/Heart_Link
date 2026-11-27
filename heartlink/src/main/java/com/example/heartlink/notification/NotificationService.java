@@ -1,6 +1,8 @@
 package com.example.heartlink.notification;
 
 import com.example.heartlink.common.error.ApiException;
+import com.example.heartlink.common.observability.EventPublisherPort;
+import com.example.heartlink.common.observability.MetricPort;
 import com.example.heartlink.entity.Match;
 import com.example.heartlink.entity.Notification;
 import com.example.heartlink.entity.NotificationType;
@@ -8,7 +10,6 @@ import com.example.heartlink.notification.dto.NotificationPageResponse;
 import com.example.heartlink.notification.dto.NotificationResponse;
 import com.example.heartlink.repository.NotificationRepository;
 import com.example.heartlink.repository.UserRepository;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,14 +25,16 @@ import java.util.List;
 public class NotificationService {
     private final NotificationRepository notifications;
     private final UserRepository users;
-    private final ApplicationEventPublisher events;
+    private final EventPublisherPort events;
+    private final MetricPort metrics;
     private final Clock clock;
 
     public NotificationService(NotificationRepository notifications, UserRepository users,
-                               ApplicationEventPublisher events, Clock clock) {
+                               EventPublisherPort events, MetricPort metrics, Clock clock) {
         this.notifications = notifications;
         this.users = users;
         this.events = events;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
@@ -70,7 +73,8 @@ public class NotificationService {
                         .type(NotificationType.MATCH_CREATED).createdAt(now).build()));
         var deliveries = rows.stream().map(row -> new NotificationsCreated.Delivery(
                 row.getUser().getId(), NotificationResponse.from(row))).toList();
-        events.publishEvent(new NotificationsCreated(deliveries));
+        events.publish(new NotificationsCreated(deliveries));
+        metrics.increment(MetricPort.Event.NOTIFICATION_CREATED, MetricPort.Outcome.SUCCESS);
     }
 
     private static String encodeCursor(Long userId, Long lastId) {

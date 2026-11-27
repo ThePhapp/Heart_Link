@@ -1,6 +1,7 @@
 package com.example.heartlink.notification;
 
 import com.example.heartlink.common.error.ApiException;
+import com.example.heartlink.common.observability.MetricPort;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -28,9 +29,11 @@ public class NotificationStream {
     private static final Logger log = LoggerFactory.getLogger(NotificationStream.class);
     private final ConcurrentHashMap<Long, Set<Connection>> connections = new ConcurrentHashMap<>();
     private final Clock clock;
+    private final MetricPort metrics;
 
-    public NotificationStream(Clock clock) {
+    public NotificationStream(Clock clock, MetricPort metrics) {
         this.clock = clock;
+        this.metrics = metrics;
     }
 
     public SseEmitter subscribe(Long userId, Instant expiresAt) {
@@ -62,8 +65,11 @@ public class NotificationStream {
             var notification = delivery.notification();
             var payload = new MatchEvent(notification.id(), notification.matchId());
             for (var connection : clients) {
-                send(connection, SseEmitter.event().id(notification.id().toString())
+                boolean sent = send(connection, SseEmitter.event().id(notification.id().toString())
                         .name("match.created").data(payload));
+                metrics.increment(sent ? MetricPort.Event.NOTIFICATION_DELIVERED
+                                : MetricPort.Event.NOTIFICATION_DELIVERY_FAILED,
+                        sent ? MetricPort.Outcome.SUCCESS : MetricPort.Outcome.FAILURE);
             }
         }
     }
@@ -74,13 +80,14 @@ public class NotificationStream {
                 send(connection, SseEmitter.event().comment("heartbeat"))));
     }
 
-    private void send(Connection connection, SseEmitter.SseEventBuilder event) {
+    private boolean send(Connection connection, SseEmitter.SseEventBuilder event) {
         if (!clock.instant().isBefore(connection.expiresAt())) {
             close(connection);
-            return;
+            return false;
         }
         try {
             connection.emitter().send(event);
+            return true;
         } catch (IOException | IllegalStateException exception) {
             // A disconnected client must not turn a committed match into a failed API response.
             log.debug("Closing notification stream for user {}", connection.userId(), exception);
@@ -90,6 +97,7 @@ public class NotificationStream {
                     connection.userId(), exception);
             close(connection);
         }
+        return false;
     }
 
     private void remove(Connection connection) {
