@@ -53,8 +53,10 @@ Chạy trong `heartlink/`, dùng riêng PostgreSQL test (cổng 55432):
 
 ```bash
 docker compose -f docker-compose.test.yml up -d --wait
-HEARTLINK_DB_TESTS=true ./mvnw -Dtest=Phase1ApiTests test
-docker compose -f docker-compose.test.yml stop
+./mvnw -B verify
+docker compose -f docker-compose.test.yml down
 ```
+
+`verify` chạy cả unit tests và các PostgreSQL integration tests. Xem [testing.md](testing.md) để biết lệnh chạy riêng và vị trí report.
 
 Các ca chat kiểm tra JWT, nội dung và phân trang, lưu tin hai chiều, chặn người ngoài/cursor chéo match, và giữ dữ liệu nhưng chặn truy cập sau unmatch.

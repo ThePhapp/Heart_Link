@@ -6,7 +6,6 @@ import org.hibernate.tool.schema.spi.SchemaManagementException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -38,8 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *  3. Negative schema-drift tests (missing index, missing FK, altered column type/nullability, missing V2 check).
  *  4. SQL-level and Spring release-profile guards blocking destructive TRUNCATE demo seed.
  */
-@EnabledIfEnvironmentVariable(named = "HEARTLINK_DB_TESTS", matches = "true")
-class DatabaseUpgradeAndDriftTests {
+class DatabaseUpgradeAndDriftIT {
 
     private static final String ADMIN_URL = "jdbc:postgresql://localhost:55432/postgres";
     private static final String DB_HOST_PREFIX = "jdbc:postgresql://localhost:55432/";

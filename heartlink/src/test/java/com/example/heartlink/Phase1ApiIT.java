@@ -10,11 +10,11 @@ import com.example.heartlink.swipe.dto.SwipeRequest;
 import com.example.heartlink.swipe.dto.SwipeResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -27,15 +27,10 @@ import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** Opt-in: uses only the disposable PostgreSQL instance in docker-compose.test.yml. */
-@EnabledIfEnvironmentVariable(named = "HEARTLINK_DB_TESTS", matches = "true")
-@SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:postgresql://localhost:55432/heartlink_test",
-        "spring.datasource.username=postgres", "spring.datasource.password=test",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "app.jwt.secret=phase1-test-secret-at-least-32-bytes-long"
-})
-class Phase1ApiTests {
+/** Integration tests use only the disposable PostgreSQL instance in test profile. */
+@ActiveProfiles("test")
+@SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
+class Phase1ApiIT {
     @Autowired WebApplicationContext context;
     @Autowired JwtAuthFilter filter;
     @Autowired JwtService jwt;
