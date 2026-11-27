@@ -34,7 +34,7 @@ class ObservabilityIT {
     @Test
     void requestIdIsReturnedAndNotAddedAsAMetricTag() throws Exception {
         String requestId = UUID.randomUUID().toString();
-        var request = HttpRequest.newBuilder(URI.create(appUrl("/api/v1/observability-probe")))
+        var request = HttpRequest.newBuilder(URI.create(appUrl("/observability-probe")))
                 .header("X-Request-ID", requestId).GET().build();
         var response = http.send(request, HttpResponse.BodyHandlers.ofString());
 
