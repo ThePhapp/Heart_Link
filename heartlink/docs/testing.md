@@ -25,3 +25,18 @@ Reports are written to `target/surefire-reports` for unit tests and
 ```powershell
 docker compose -f docker-compose.test.yml down
 ```
+
+## Internal observability
+
+Actuator health and metrics run on the separate management listener, defaulting to
+`127.0.0.1:9091`. Only `health` and `metrics` are exposed, and health details are
+hidden. Override `MANAGEMENT_SERVER_PORT` and `MANAGEMENT_SERVER_ADDRESS` only for
+an internal monitoring network; the Docker Compose app does not publish this port.
+
+Useful endpoints from the application host are `/actuator/health`,
+`/actuator/metrics/http.server.requests`, and
+`/actuator/metrics/hikaricp.connections.active` on the management listener.
+Requests receive an `X-Request-ID` response header. Supplied IDs must be UUIDs;
+other values are replaced before being added to the log context. Request IDs are
+not metric dimensions. Custom metrics use `MetricPort` with closed event/outcome
+enums, while `EventPublisherPort` is the application event boundary.

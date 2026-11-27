@@ -31,6 +31,25 @@ jobs:
       - name: Run unit and integration tests
         working-directory: heartlink
         run: ./mvnw -B verify
+      - name: Require non-skipped integration tests
+        working-directory: heartlink
+        run: |
+          python - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+
+          reports = glob.glob("target/failsafe-reports/TEST-*.xml")
+          if not reports:
+              raise SystemExit("Failsafe produced no integration reports")
+          suites = [ET.parse(path).getroot() for path in reports]
+          tests = sum(int(suite.attrib.get("tests", 0)) for suite in suites)
+          skipped = sum(int(suite.attrib.get("skipped", 0)) for suite in suites)
+          failures = sum(int(suite.attrib.get("failures", 0)) for suite in suites)
+          errors = sum(int(suite.attrib.get("errors", 0)) for suite in suites)
+          print(f"Integration tests: {tests}; skipped: {skipped}; failures: {failures}; errors: {errors}")
+          if tests < 20 or skipped or failures or errors:
+              raise SystemExit("Integration test report gate failed")
+          PY
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
